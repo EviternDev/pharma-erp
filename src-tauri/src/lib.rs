@@ -189,7 +189,7 @@ pub fn run() {
                 INSERT OR IGNORE INTO gst_slabs (rate, description) VALUES (18, 'GST 18%');
 
                 INSERT OR IGNORE INTO users (username, password_hash, full_name, role, is_active)
-                VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Administrator', 'admin', 1);
+                VALUES ('admin', '$2b$10$n5vbmtk602soZ1.G8CH/6u4F69goDCXD9c.SObHhhH36QdpnVtFkG', 'Administrator', 'admin', 1);
 
                 INSERT OR IGNORE INTO pharmacy_settings (id, name, address, phone, gstin, drug_license_no, state_code)
                 VALUES (1, 'My Pharmacy', '123 Main Street', '0000000000', '', '', '');
