@@ -1,0 +1,47 @@
+@media print {
+  .no-print,
+  nav,
+  [role="navigation"],
+  header,
+  footer,
+  button:not(.print-visible),
+  input,
+  textarea,
+  select {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 5mm;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 5mm;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid black;
+    padding: 4px;
+    text-align: left;
+  }
+}
