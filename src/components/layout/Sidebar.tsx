@@ -22,6 +22,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/features/auth/AuthContext";
 
 interface NavItem {
   label: string;
@@ -81,6 +82,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(["Inventory", "Sales", "Reports"]));
   const location = useLocation();
+  const auth = useAuth();
 
   function toggleGroup(label: string) {
     setOpenGroups((prev) => {
@@ -204,10 +206,15 @@ export function Sidebar() {
         {!collapsed ? (
           <div className="flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-700 truncate">Administrator</p>
-              <p className="text-xs text-slate-500 truncate">admin</p>
+              <p className="text-sm font-medium text-slate-700 truncate">
+                {auth.user?.fullName ?? "—"}
+              </p>
+              <p className="text-xs text-slate-500 truncate">
+                {auth.user?.username ?? ""}
+              </p>
             </div>
             <button
+              onClick={() => auth.logout()}
               className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500"
               title="Logout"
             >
@@ -216,6 +223,7 @@ export function Sidebar() {
           </div>
         ) : (
           <button
+            onClick={() => auth.logout()}
             className="w-full flex justify-center p-1.5 rounded-md hover:bg-slate-100 text-slate-500"
             title="Logout"
           >
