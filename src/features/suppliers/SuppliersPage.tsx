@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { PlusIcon, PencilIcon, SearchIcon, TruckIcon } from "lucide-react";
+import { PlusIcon, PencilIcon, SearchIcon, TruckIcon, EyeIcon } from "lucide-react";
 import type { Supplier } from "@/types";
 import {
   getSuppliersWithPayments,
@@ -21,6 +22,7 @@ import {
 import SupplierFormDialog from "./SupplierFormDialog";
 
 export default function SuppliersPage() {
+  const navigate = useNavigate();
   const [suppliers, setSuppliers] = useState<SupplierWithPayments[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -177,15 +179,26 @@ export default function SuppliersPage() {
                   </TableCell>
 
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => openEditDialog(s)}
-                      title="Edit supplier"
-                    >
-                      <PencilIcon className="size-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => navigate(`/suppliers/${s.id}`)}
+                        title="View supplier"
+                      >
+                        <EyeIcon className="size-4" />
+                        <span className="sr-only">View</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => openEditDialog(s)}
+                        title="Edit supplier"
+                      >
+                        <PencilIcon className="size-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

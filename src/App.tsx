@@ -12,8 +12,11 @@ import StockAlertsPage from "@/pages/inventory/StockAlertsPage";
 import ImportPage from "@/pages/inventory/ImportPage";
 import NewSalePage from "@/pages/sales/NewSalePage";
 import SalesHistoryPage from "@/pages/sales/SalesHistoryPage";
+import InvoicePage from "@/pages/sales/InvoicePage";
 import CustomersPage from "@/pages/customers/CustomersPage";
+import CustomerDetailPage from "@/pages/customers/CustomerDetailPage";
 import SuppliersPage from "@/pages/suppliers/SuppliersPage";
+import SupplierDetailPage from "@/pages/suppliers/SupplierDetailPage";
 import SalesReportPage from "@/pages/reports/SalesReportPage";
 import StockReportPage from "@/pages/reports/StockReportPage";
 import ProfitLossPage from "@/pages/reports/ProfitLossPage";
@@ -58,14 +61,17 @@ function ProtectedApp() {
         <Route element={<ProtectedRoute permission="sales:view" />}>
           <Route path="sales/new" element={<NewSalePage />} />
           <Route path="sales/history" element={<SalesHistoryPage />} />
+          <Route path="sales/invoice/:id" element={<InvoicePage />} />
         </Route>
 
         <Route element={<ProtectedRoute permission="customers:view" />}>
           <Route path="customers" element={<CustomersPage />} />
+          <Route path="customers/:id" element={<CustomerDetailPage />} />
         </Route>
 
         <Route element={<ProtectedRoute permission="suppliers:view" />}>
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="suppliers/:id" element={<SupplierDetailPage />} />
         </Route>
 
         <Route element={<ProtectedRoute permission="reports:view" />}>

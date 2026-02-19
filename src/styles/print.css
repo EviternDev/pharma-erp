@@ -1,6 +1,13 @@
+@page {
+  size: A4 portrait;
+  margin: 12mm 15mm;
+}
+
 @media print {
+  /* Hide all non-printable elements */
   .no-print,
   nav,
+  aside,
   [role="navigation"],
   header,
   footer,
@@ -11,37 +18,96 @@
     display: none !important;
   }
 
+  /* Body styling for print */
   body {
     background: white !important;
     color: black !important;
     margin: 0;
-    padding: 5mm;
+    padding: 0;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12pt;
+    line-height: 1.4;
   }
 
-  @page {
-    size: 80mm auto;
-    margin: 5mm;
-  }
-
+  /* Remove shadows and text effects */
   * {
     box-shadow: none !important;
     text-shadow: none !important;
   }
 
-  a {
-    text-decoration: none;
+  /* Invoice content full width */
+  #invoice-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    page-break-inside: avoid;
+    background: white !important;
   }
 
+  /* Links */
+  a {
+    text-decoration: none;
+    color: black;
+  }
+
+  /* Tables for print clarity */
   table {
     border-collapse: collapse;
     width: 100%;
+    margin-bottom: 10mm;
+    page-break-inside: avoid;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  thead {
+    display: table-header-group;
+    page-break-inside: avoid;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  tbody {
+    page-break-inside: avoid;
+  }
+
+  tr {
+    page-break-inside: avoid;
   }
 
   th,
   td {
-    border: 1px solid black;
-    padding: 4px;
+    border: 1px solid #000;
+    padding: 3px 5px;
     text-align: left;
+    vertical-align: top;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold;
+  }
+
+  /* Keep pages together utility class */
+  .print-keep-together {
+    page-break-inside: avoid;
+  }
+
+  /* Main container */
+  main {
+    padding: 0;
+    margin: 0;
+  }
+}
+
+/* Screen-only: hide print-only elements */
+@media screen {
+  .print-only {
+    display: none !important;
   }
 }

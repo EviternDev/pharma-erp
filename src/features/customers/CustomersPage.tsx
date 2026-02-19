@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { PlusIcon, PencilIcon, SearchIcon, UsersIcon } from "lucide-react";
+import { PlusIcon, PencilIcon, SearchIcon, UsersIcon, EyeIcon } from "lucide-react";
 import type { Customer } from "@/types";
 import {
   getCustomersWithStats,
@@ -33,6 +34,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<CustomerWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -188,15 +190,26 @@ export default function CustomersPage() {
                   </TableCell>
 
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => openEditDialog(c)}
-                      title="Edit customer"
-                    >
-                      <PencilIcon className="size-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => navigate(`/customers/${c.id}`)}
+                        title="View customer"
+                      >
+                        <EyeIcon className="size-4" />
+                        <span className="sr-only">View</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => openEditDialog(c)}
+                        title="Edit customer"
+                      >
+                        <PencilIcon className="size-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
