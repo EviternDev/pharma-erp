@@ -23,5 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+# Windows artifacts
+nul
+
 # Sisyphus working files
 .sisyphus/
