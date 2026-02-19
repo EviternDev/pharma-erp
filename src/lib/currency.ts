@@ -39,3 +39,19 @@ export function paiseToRupees(paise: number): number {
 export function toPaise(value: number): Paise {
   return Math.round(value) as Paise;
 }
+
+/**
+ * Alias for rupeesToPaise — parse a rupee string to paise integer.
+ * e.g. "100.50" → 10050
+ */
+export function parseToPaise(rupees: string): Paise {
+  return rupeesToPaise(rupees);
+}
+
+/**
+ * Format paise as a plain number string in rupees (no currency symbol).
+ * e.g. 10050 → "100.50"
+ */
+export function paiseToRupeesString(paise: number): string {
+  return (paise / 100).toFixed(2);
+}
