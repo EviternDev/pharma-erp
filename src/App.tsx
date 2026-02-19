@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/features/auth/AuthContext";
+import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import LoginPage from "@/features/auth/LoginPage";
 import FirstLaunchWizard from "@/features/auth/FirstLaunchWizard";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -46,20 +47,41 @@ function ProtectedApp() {
     <Routes>
       <Route path="/" element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="inventory/medicines" element={<MedicinesPage />} />
-        <Route path="inventory/batches" element={<BatchesPage />} />
-        <Route path="inventory/stock-alerts" element={<StockAlertsPage />} />
-        <Route path="inventory/import" element={<ImportPage />} />
-        <Route path="sales/new" element={<NewSalePage />} />
-        <Route path="sales/history" element={<SalesHistoryPage />} />
-        <Route path="customers" element={<CustomersPage />} />
-        <Route path="suppliers" element={<SuppliersPage />} />
-        <Route path="reports/sales" element={<SalesReportPage />} />
-        <Route path="reports/stock" element={<StockReportPage />} />
-        <Route path="reports/profit-loss" element={<ProfitLossPage />} />
-        <Route path="reports/expiry" element={<ExpiryReportPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+
+        <Route element={<ProtectedRoute permission="inventory:view" />}>
+          <Route path="inventory/medicines" element={<MedicinesPage />} />
+          <Route path="inventory/batches" element={<BatchesPage />} />
+          <Route path="inventory/stock-alerts" element={<StockAlertsPage />} />
+          <Route path="inventory/import" element={<ImportPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute permission="sales:view" />}>
+          <Route path="sales/new" element={<NewSalePage />} />
+          <Route path="sales/history" element={<SalesHistoryPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute permission="customers:view" />}>
+          <Route path="customers" element={<CustomersPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute permission="suppliers:view" />}>
+          <Route path="suppliers" element={<SuppliersPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute permission="reports:view" />}>
+          <Route path="reports/sales" element={<SalesReportPage />} />
+          <Route path="reports/stock" element={<StockReportPage />} />
+          <Route path="reports/profit-loss" element={<ProfitLossPage />} />
+          <Route path="reports/expiry" element={<ExpiryReportPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute permission="users:manage" />}>
+          <Route path="users" element={<UsersPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute permission="settings:manage" />}>
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
       </Route>
     </Routes>
   );

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth/AuthContext";
+import { hasPermission, SIDEBAR_PERMISSIONS } from "@/features/auth/permissions";
 
 interface NavItem {
   label: string;
@@ -84,6 +85,35 @@ export function Sidebar() {
   const location = useLocation();
   const auth = useAuth();
 
+  // Filter navigation based on user permissions
+  const visibleNavigation: NavEntry[] = navigation.reduce<NavEntry[]>((acc, entry) => {
+    const requiredPermission = SIDEBAR_PERMISSIONS[entry.label];
+
+    if (isGroup(entry)) {
+      // All children of a group share the group-level permission
+      if (!requiredPermission) {
+        acc.push(entry);
+        return acc;
+      }
+      if (!auth.user) return acc;
+      if (hasPermission(auth.user.role, requiredPermission)) {
+        acc.push(entry);
+      }
+      return acc;
+    }
+
+    // NavItem
+    if (!requiredPermission) {
+      acc.push(entry);
+      return acc;
+    }
+    if (!auth.user) return acc;
+    if (hasPermission(auth.user.role, requiredPermission)) {
+      acc.push(entry);
+    }
+    return acc;
+  }, []);
+
   function toggleGroup(label: string) {
     setOpenGroups((prev) => {
       const next = new Set(prev);
@@ -128,7 +158,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2 px-2">
-        {navigation.map((entry) => {
+        {visibleNavigation.map((entry) => {
           if (isGroup(entry)) {
             const groupActive = isGroupActive(entry);
             const groupOpen = openGroups.has(entry.label);
