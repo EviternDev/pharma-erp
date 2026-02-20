@@ -53,6 +53,7 @@ const navigation: NavEntry[] = [
       { label: "Batches", path: "/inventory/batches", icon: <Layers size={18} /> },
       { label: "Stock Alerts", path: "/inventory/stock-alerts", icon: <AlertTriangle size={18} /> },
       { label: "Import", path: "/inventory/import", icon: <Upload size={18} /> },
+      { label: "Expiry", path: "/inventory/expiry", icon: <Clock size={18} /> },
     ],
   },
   {

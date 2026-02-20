@@ -10,6 +10,7 @@ import MedicinesPage from "@/pages/inventory/MedicinesPage";
 import BatchesPage from "@/pages/inventory/BatchesPage";
 import StockAlertsPage from "@/pages/inventory/StockAlertsPage";
 import ImportPage from "@/pages/inventory/ImportPage";
+import ExpiryDashboardPage from "@/pages/inventory/ExpiryDashboardPage";
 import NewSalePage from "@/pages/sales/NewSalePage";
 import SalesHistoryPage from "@/pages/sales/SalesHistoryPage";
 import InvoicePage from "@/pages/sales/InvoicePage";
@@ -56,6 +57,7 @@ function ProtectedApp() {
           <Route path="inventory/batches" element={<BatchesPage />} />
           <Route path="inventory/stock-alerts" element={<StockAlertsPage />} />
           <Route path="inventory/import" element={<ImportPage />} />
+          <Route path="inventory/expiry" element={<ExpiryDashboardPage />} />
         </Route>
 
         <Route element={<ProtectedRoute permission="sales:view" />}>
