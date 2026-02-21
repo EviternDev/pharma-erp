@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Users as UsersIcon } from 'lucide-react';
 import type { PharmacySettings } from '@/types';
 import { getSettings, updateSettings } from '@/db/queries/settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BackupRestore from './BackupRestore';
 
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -24,13 +27,13 @@ type FormData = {
 };
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState<PharmacySettings | null>(null);
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Load settings from DB on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -185,162 +188,203 @@ export default function SettingsPage() {
         <p className="text-slate-600 mt-2">Configure your pharmacy details, GST information, and system preferences.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Pharmacy Name and Phone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Pharmacy Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name || ''}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="Enter pharmacy name"
-                  aria-invalid={!!errors.name}
-                />
-                {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
-              </div>
+      <Tabs defaultValue="pharmacy">
+        <TabsList>
+          <TabsTrigger value="pharmacy">Pharmacy Details</TabsTrigger>
+          <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="backup">Backup & Restore</TabsTrigger>
+          <TabsTrigger value="about">About</TabsTrigger>
+        </TabsList>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone *</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone || ''}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="Enter phone number"
-                  aria-invalid={!!errors.phone}
-                />
-                {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
-              </div>
-            </div>
+        <TabsContent value="pharmacy">
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Pharmacy Name and Phone */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Pharmacy Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name || ''}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      placeholder="Enter pharmacy name"
+                      aria-invalid={!!errors.name}
+                    />
+                    {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                  </div>
 
-            {/* Address */}
-            <div className="space-y-2">
-              <Label htmlFor="address">Address *</Label>
-              <textarea
-                id="address"
-                value={formData.address || ''}
-                onChange={(e) => handleChange('address', e.target.value)}
-                placeholder="Enter full address"
-                rows={3}
-                aria-invalid={!!errors.address}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone *</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone || ''}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      placeholder="Enter phone number"
+                      aria-invalid={!!errors.phone}
+                    />
+                    {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+                  </div>
+                </div>
 
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="Enter email address"
-              />
-            </div>
+                {/* Address */}
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address *</Label>
+                  <textarea
+                    id="address"
+                    value={formData.address || ''}
+                    onChange={(e) => handleChange('address', e.target.value)}
+                    placeholder="Enter full address"
+                    rows={3}
+                    aria-invalid={!!errors.address}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
+                </div>
 
-            {/* GST and License */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="gstin">GSTIN (15 chars) *</Label>
-                <Input
-                  id="gstin"
-                  value={formData.gstin || ''}
-                  onChange={(e) => handleChange('gstin', e.target.value.toUpperCase())}
-                  placeholder="E.g., 27AAFCT5055K1Z0"
-                  maxLength={15}
-                  aria-invalid={!!errors.gstin}
-                />
-                {errors.gstin && <p className="text-sm text-red-600">{errors.gstin}</p>}
-              </div>
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email || ''}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    placeholder="Enter email address"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="drugLicenseNo">Drug License No *</Label>
-                <Input
-                  id="drugLicenseNo"
-                  value={formData.drugLicenseNo || ''}
-                  onChange={(e) => handleChange('drugLicenseNo', e.target.value)}
-                  placeholder="Enter license number"
-                  aria-invalid={!!errors.drugLicenseNo}
-                />
-                {errors.drugLicenseNo && <p className="text-sm text-red-600">{errors.drugLicenseNo}</p>}
-              </div>
-            </div>
+                {/* GST and License */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="gstin">GSTIN (15 chars) *</Label>
+                    <Input
+                      id="gstin"
+                      value={formData.gstin || ''}
+                      onChange={(e) => handleChange('gstin', e.target.value.toUpperCase())}
+                      placeholder="E.g., 27AAFCT5055K1Z0"
+                      maxLength={15}
+                      aria-invalid={!!errors.gstin}
+                    />
+                    {errors.gstin && <p className="text-sm text-red-600">{errors.gstin}</p>}
+                  </div>
 
-            {/* State Code and Invoice Prefix */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="stateCode">State Code (2 digits) *</Label>
-                <Input
-                  id="stateCode"
-                  value={formData.stateCode || ''}
-                  onChange={(e) => handleChange('stateCode', e.target.value)}
-                  placeholder="E.g., 27"
-                  maxLength={2}
-                  aria-invalid={!!errors.stateCode}
-                />
-                {errors.stateCode && <p className="text-sm text-red-600">{errors.stateCode}</p>}
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="drugLicenseNo">Drug License No *</Label>
+                    <Input
+                      id="drugLicenseNo"
+                      value={formData.drugLicenseNo || ''}
+                      onChange={(e) => handleChange('drugLicenseNo', e.target.value)}
+                      placeholder="Enter license number"
+                      aria-invalid={!!errors.drugLicenseNo}
+                    />
+                    {errors.drugLicenseNo && <p className="text-sm text-red-600">{errors.drugLicenseNo}</p>}
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="invoicePrefix">Invoice Prefix *</Label>
-                <Input
-                  id="invoicePrefix"
-                  value={formData.invoicePrefix || ''}
-                  onChange={(e) => handleChange('invoicePrefix', e.target.value.toUpperCase())}
-                  placeholder="E.g., INV"
-                  aria-invalid={!!errors.invoicePrefix}
-                />
-                {errors.invoicePrefix && <p className="text-sm text-red-600">{errors.invoicePrefix}</p>}
-              </div>
-            </div>
+                {/* State Code and Invoice Prefix */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="stateCode">State Code (2 digits) *</Label>
+                    <Input
+                      id="stateCode"
+                      value={formData.stateCode || ''}
+                      onChange={(e) => handleChange('stateCode', e.target.value)}
+                      placeholder="E.g., 27"
+                      maxLength={2}
+                      aria-invalid={!!errors.stateCode}
+                    />
+                    {errors.stateCode && <p className="text-sm text-red-600">{errors.stateCode}</p>}
+                  </div>
 
-            {/* Stock and Expiry Thresholds */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="lowStockThreshold">Low Stock Threshold *</Label>
-                <Input
-                  id="lowStockThreshold"
-                  type="number"
-                  value={formData.lowStockThreshold || 20}
-                  onChange={(e) => handleChange('lowStockThreshold', parseInt(e.target.value, 10))}
-                  min="1"
-                  aria-invalid={!!errors.lowStockThreshold}
-                />
-                {errors.lowStockThreshold && <p className="text-sm text-red-600">{errors.lowStockThreshold}</p>}
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="invoicePrefix">Invoice Prefix *</Label>
+                    <Input
+                      id="invoicePrefix"
+                      value={formData.invoicePrefix || ''}
+                      onChange={(e) => handleChange('invoicePrefix', e.target.value.toUpperCase())}
+                      placeholder="E.g., INV"
+                      aria-invalid={!!errors.invoicePrefix}
+                    />
+                    {errors.invoicePrefix && <p className="text-sm text-red-600">{errors.invoicePrefix}</p>}
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="nearExpiryDays">Near Expiry Days *</Label>
-                <Input
-                  id="nearExpiryDays"
-                  type="number"
-                  value={formData.nearExpiryDays || 90}
-                  onChange={(e) => handleChange('nearExpiryDays', parseInt(e.target.value, 10))}
-                  min="1"
-                  aria-invalid={!!errors.nearExpiryDays}
-                />
-                {errors.nearExpiryDays && <p className="text-sm text-red-600">{errors.nearExpiryDays}</p>}
-              </div>
-            </div>
+                {/* Stock and Expiry Thresholds */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="lowStockThreshold">Low Stock Threshold *</Label>
+                    <Input
+                      id="lowStockThreshold"
+                      type="number"
+                      value={formData.lowStockThreshold || 20}
+                      onChange={(e) => handleChange('lowStockThreshold', parseInt(e.target.value, 10))}
+                      min="1"
+                      aria-invalid={!!errors.lowStockThreshold}
+                    />
+                    {errors.lowStockThreshold && <p className="text-sm text-red-600">{errors.lowStockThreshold}</p>}
+                  </div>
 
-            {/* Submit Button */}
-            <div className="pt-4">
-              <Button type="submit" disabled={saving} className="w-full md:w-auto">
-                {saving ? 'Saving...' : 'Save Settings'}
+                  <div className="space-y-2">
+                    <Label htmlFor="nearExpiryDays">Near Expiry Days *</Label>
+                    <Input
+                      id="nearExpiryDays"
+                      type="number"
+                      value={formData.nearExpiryDays || 90}
+                      onChange={(e) => handleChange('nearExpiryDays', parseInt(e.target.value, 10))}
+                      min="1"
+                      aria-invalid={!!errors.nearExpiryDays}
+                    />
+                    {errors.nearExpiryDays && <p className="text-sm text-red-600">{errors.nearExpiryDays}</p>}
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-4">
+                  <Button type="submit" disabled={saving} className="w-full md:w-auto">
+                    {saving ? 'Saving...' : 'Save Settings'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600 mb-4">Manage user accounts, roles, and access permissions.</p>
+              <Button onClick={() => navigate('/users')}>
+                <UsersIcon className="h-4 w-4 mr-2" />
+                Manage Users
               </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <BackupRestore />
+        <TabsContent value="backup">
+          <BackupRestore />
+        </TabsContent>
+
+        <TabsContent value="about">
+          <Card>
+            <CardHeader>
+              <CardTitle>About PharmaCare ERP</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="font-medium">PharmaCare ERP v1.0</p>
+              <p className="text-slate-600">Lightweight, offline-first pharmacy management for Indian pharmacies.</p>
+              <p className="text-slate-600 text-sm">GST-compliant billing &bull; Inventory management &bull; FEFO stock tracking</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
