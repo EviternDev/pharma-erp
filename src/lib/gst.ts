@@ -2,7 +2,7 @@
  * GST Calculation Engine — Pure functions for Indian GST compliance.
  *
  * All monetary values are integers in paise (1/100 INR).
- * CGST + SGST split (intra-state only, no IGST in v1).
+ * CGST + SGST split (intra-state only).
  * MRP is GST-inclusive; taxable value is back-calculated.
  */
 

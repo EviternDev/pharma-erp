@@ -5,9 +5,11 @@ import type { Paise } from '@/types';
  * Returns 0 for invalid input.
  */
 export function rupeesToPaise(rupees: string): Paise {
-  const parsed = parseFloat(rupees);
-  if (isNaN(parsed) || parsed < 0) return 0 as Paise;
-  return Math.round(parsed * 100) as Paise;
+  const trimmed = rupees.trim();
+  if (!trimmed || isNaN(Number(trimmed)) || Number(trimmed) < 0) return 0 as Paise;
+  const [intPart = '0', decPart = '0'] = trimmed.split('.');
+  const paise = parseInt(intPart, 10) * 100 + Math.round(parseInt((decPart + '0').slice(0, 2), 10));
+  return (isNaN(paise) ? 0 : paise) as Paise;
 }
 
 /**
@@ -53,5 +55,8 @@ export function parseToPaise(rupees: string): Paise {
  * e.g. 10050 → "100.50"
  */
 export function paiseToRupeesString(paise: number): string {
-  return (paise / 100).toFixed(2);
+  const rupees = Math.floor(Math.abs(paise) / 100);
+  const cents = Math.abs(paise) % 100;
+  const sign = paise < 0 ? '-' : '';
+  return `${sign}${rupees}.${String(cents).padStart(2, '0')}`;
 }
