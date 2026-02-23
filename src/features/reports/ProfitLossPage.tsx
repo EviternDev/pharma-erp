@@ -67,7 +67,7 @@ interface ProfitLossRow {
   medicine_name: string;
   quantity: number;
   cost_price_paise: number;
-  unit_price_paise: number;
+  taxable_amount_paise: number;
   profit_paise: number;
 }
 
@@ -79,8 +79,8 @@ async function fetchProfitLossReport(
   return db.select<ProfitLossRow[]>(
     `
     SELECT s.sale_date, s.invoice_number, m.name as medicine_name,
-      si.quantity, b.cost_price_paise, si.unit_price_paise,
-      (si.unit_price_paise - b.cost_price_paise) * si.quantity as profit_paise
+      si.quantity, b.cost_price_paise, si.taxable_amount_paise,
+      (si.taxable_amount_paise - b.cost_price_paise * si.quantity) as profit_paise
     FROM sale_items si
     JOIN sales s ON si.sale_id = s.id
     JOIN medicines m ON si.medicine_id = m.id
@@ -103,7 +103,7 @@ function buildCsvContent(rows: ProfitLossRow[]): string {
     "Medicine Name",
     "Qty Sold",
     "Cost Price (₹/unit)",
-    "Selling Price (₹/unit)",
+    "Taxable Amount (₹)",
     "Profit (₹)",
   ].join(",");
 
@@ -115,7 +115,7 @@ function buildCsvContent(rows: ProfitLossRow[]): string {
       medicineName,
       r.quantity,
       paiseToRupeesString(r.cost_price_paise),
-      paiseToRupeesString(r.unit_price_paise),
+      paiseToRupeesString(r.taxable_amount_paise),
       paiseToRupeesString(r.profit_paise),
     ].join(",");
   });
@@ -208,7 +208,7 @@ export default function ProfitLossPage() {
     let totalCost = 0;
 
     for (const r of rows) {
-      totalRevenue += r.unit_price_paise * r.quantity;
+      totalRevenue += r.taxable_amount_paise;
       totalCost += r.cost_price_paise * r.quantity;
     }
 
@@ -357,7 +357,7 @@ export default function ProfitLossPage() {
                   Cost Price (₹/unit)
                 </TableHead>
                 <TableHead className="text-right">
-                  Selling Price (₹/unit)
+                  Taxable Amount (₹)
                 </TableHead>
                 <TableHead className="text-right">Profit (₹)</TableHead>
               </TableRow>
@@ -382,7 +382,7 @@ export default function ProfitLossPage() {
                     {formatPaiseToCurrency(row.cost_price_paise)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-sm">
-                    {formatPaiseToCurrency(row.unit_price_paise)}
+                    {formatPaiseToCurrency(row.taxable_amount_paise)}
                   </TableCell>
                   <TableCell
                     className={`text-right tabular-nums text-sm font-medium ${
