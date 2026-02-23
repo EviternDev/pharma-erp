@@ -174,75 +174,46 @@ export interface CreateSaleItemData {
  */
 export async function createSale(data: CreateSaleData): Promise<number> {
   const db = await getDb();
-  await db.execute('BEGIN IMMEDIATE');
-  try {
-    // Generate invoice number inside transaction if not provided
-    let invoiceNumber = data.invoiceNumber;
-    if (!invoiceNumber) {
-      const settingsRows = await db.select<{ invoice_prefix: string; next_invoice_number: number }[]>(
-        'SELECT invoice_prefix, next_invoice_number FROM pharmacy_settings WHERE id = 1'
-      );
-      const prefix = settingsRows[0]?.invoice_prefix ?? 'INV';
-      const number = settingsRows[0]?.next_invoice_number ?? 1;
-      await db.execute(
-        'UPDATE pharmacy_settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1'
-      );
-      invoiceNumber = `${prefix}-${String(number).padStart(6, '0')}`;
-    }
-    // Insert sale record
-    const saleResult = await db.execute(
-      `INSERT INTO sales (invoice_number, customer_id, user_id, subtotal_paise, discount_paise, total_cgst_paise, total_sgst_paise, total_gst_paise, grand_total_paise, payment_mode, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [
-        invoiceNumber,
-        data.customerId,
-        data.userId,
-        data.subtotalPaise,
-        data.discountPaise,
-        data.totalCgstPaise,
-        data.totalSgstPaise,
-        data.totalGstPaise,
-        data.grandTotalPaise,
-        data.paymentMode,
-        data.notes ?? null,
-      ]
-    );
+  // Step 1: Read invoice counter (read-only, no lock needed)
+  const settingsRows = await db.select<{ invoice_prefix: string; next_invoice_number: number }[]>(
+    'SELECT invoice_prefix, next_invoice_number FROM pharmacy_settings WHERE id = 1'
+  );
+  const prefix = settingsRows[0]?.invoice_prefix ?? 'INV';
+  const number = settingsRows[0]?.next_invoice_number ?? 1;
+  const invoiceNumber = data.invoiceNumber ?? `${prefix}-${String(number).padStart(6, '0')}`;
+  // Step 2: Increment invoice counter + insert sale header atomically.
+  // tauri-plugin-sql has no transaction() API; separate execute() calls go through SQLx
+  // connection pooling and cannot share a BEGIN/COMMIT across calls.
+  // We use a single multi-statement execute() for atomicity within each step.
+  const customerIdLiteral = data.customerId === null ? 'NULL' : String(data.customerId);
+  const notesLiteral = data.notes ? `'${data.notes.replace(/'/g, "''")}'` : 'NULL';
+  const headerSql = [
+    'BEGIN;',
+    `UPDATE pharmacy_settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1;`,
+    `INSERT INTO sales (invoice_number, customer_id, user_id, subtotal_paise, discount_paise, total_cgst_paise, total_sgst_paise, total_gst_paise, grand_total_paise, payment_mode, notes)`,
+    `VALUES ('${invoiceNumber}', ${customerIdLiteral}, ${data.userId}, ${data.subtotalPaise}, ${data.discountPaise}, ${data.totalCgstPaise}, ${data.totalSgstPaise}, ${data.totalGstPaise}, ${data.grandTotalPaise}, '${data.paymentMode}', ${notesLiteral});`,
+    'COMMIT;',
+  ].join('\n');
+  const headerResult = await db.execute(headerSql);
+  const saleId = headerResult.lastInsertId ?? 0;
 
-    const saleId = saleResult.lastInsertId ?? 0;
-  // Insert sale items and deduct batch quantities
-    for (const item of data.items) {
-      await db.execute(
-        `INSERT INTO sale_items (sale_id, batch_id, medicine_id, quantity, unit_price_paise, discount_paise, taxable_amount_paise, cgst_rate, cgst_amount_paise, sgst_rate, sgst_amount_paise, total_paise, hsn_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-        [
-          saleId,
-          item.batchId,
-          item.medicineId,
-          item.quantity,
-          item.unitPricePaise,
-          item.discountPaise,
-          item.taxableAmountPaise,
-          item.cgstRate,
-          item.cgstAmountPaise,
-          item.sgstRate,
-          item.sgstAmountPaise,
-          item.totalPaise,
-          item.hsnCode,
-        ]
-      );
-    // Deduct quantity from batch
-      await db.execute(
-        'UPDATE batches SET quantity = quantity - $1 WHERE id = $2',
-        [item.quantity, item.batchId]
-      );
-    }
+  // Step 3: Insert all sale items + deduct stock in one atomic execute().
+  // saleId is known, so no last_insert_rowid() ambiguity across items.
+  if (data.items.length > 0) {
+    const itemStatements = data.items.map((item) => {
+      const hsnLiteral = `'${item.hsnCode.replace(/'/g, "''")}'`;
+      return [
+        `INSERT INTO sale_items (sale_id, batch_id, medicine_id, quantity, unit_price_paise, discount_paise, taxable_amount_paise, cgst_rate, cgst_amount_paise, sgst_rate, sgst_amount_paise, total_paise, hsn_code)`,
+        `VALUES (${saleId}, ${item.batchId}, ${item.medicineId}, ${item.quantity}, ${item.unitPricePaise}, ${item.discountPaise}, ${item.taxableAmountPaise}, ${item.cgstRate}, ${item.cgstAmountPaise}, ${item.sgstRate}, ${item.sgstAmountPaise}, ${item.totalPaise}, ${hsnLiteral});`,
+        `UPDATE batches SET quantity = quantity - ${item.quantity} WHERE id = ${item.batchId};`,
+      ].join(' ');
+    });
 
-    await db.execute('COMMIT');
-    return saleId;
-  } catch (err) {
-    await db.execute('ROLLBACK');
-    throw err;
+    const itemsSql = ['BEGIN;', ...itemStatements, 'COMMIT;'].join('\n');
+    await db.execute(itemsSql);
   }
+
+  return saleId;
 }
 
 export async function getSalesByDateRange(
