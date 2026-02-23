@@ -15,7 +15,6 @@ import { getBatchesFEFO } from "@/db/queries/batches";
 import { searchCustomers } from "@/db/queries/customers";
 import {
   createSale,
-  getNextInvoiceNumber,
   type CreateSaleData,
   type CreateSaleItemData,
 } from "@/db/queries/sales";
@@ -196,7 +195,7 @@ export default function NewSalePage() {
         setCustomerResults(results);
         setShowCustomerResults(true);
       } catch {
-        // silent
+        void 0; // debounced customer search failure — non-critical
       }
     }, 300);
 
@@ -352,7 +351,6 @@ export default function NewSalePage() {
 
     setProcessing(true);
     try {
-      const invoiceNumber = await getNextInvoiceNumber();
 
       const items: CreateSaleItemData[] = cart.map((item) => ({
         batchId: item.batchId,
@@ -370,7 +368,6 @@ export default function NewSalePage() {
       }));
 
       const saleData: CreateSaleData = {
-        invoiceNumber,
         customerId: selectedCustomer?.id ?? null,
         userId: user.id,
         subtotalPaise: invoiceTotals.subtotalPaise,
@@ -401,7 +398,7 @@ export default function NewSalePage() {
         });
       }
 
-      toast.success(`Sale completed: ${invoiceNumber}`);
+      toast.success(`Sale completed`);
       setConfirmOpen(false);
       setCart([]);
       setSelectedCustomer(null);

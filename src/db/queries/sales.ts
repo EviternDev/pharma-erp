@@ -139,7 +139,7 @@ export async function getNextInvoiceNumber(): Promise<string> {
 }
 
 export interface CreateSaleData {
-  invoiceNumber: string;
+  invoiceNumber?: string;
   customerId: number | null;
   userId: number;
   subtotalPaise: number;
@@ -176,12 +176,25 @@ export async function createSale(data: CreateSaleData): Promise<number> {
   const db = await getDb();
   await db.execute('BEGIN IMMEDIATE');
   try {
+    // Generate invoice number inside transaction if not provided
+    let invoiceNumber = data.invoiceNumber;
+    if (!invoiceNumber) {
+      const settingsRows = await db.select<{ invoice_prefix: string; next_invoice_number: number }[]>(
+        'SELECT invoice_prefix, next_invoice_number FROM pharmacy_settings WHERE id = 1'
+      );
+      const prefix = settingsRows[0]?.invoice_prefix ?? 'INV';
+      const number = settingsRows[0]?.next_invoice_number ?? 1;
+      await db.execute(
+        'UPDATE pharmacy_settings SET next_invoice_number = next_invoice_number + 1 WHERE id = 1'
+      );
+      invoiceNumber = `${prefix}-${String(number).padStart(6, '0')}`;
+    }
     // Insert sale record
     const saleResult = await db.execute(
       `INSERT INTO sales (invoice_number, customer_id, user_id, subtotal_paise, discount_paise, total_cgst_paise, total_sgst_paise, total_gst_paise, grand_total_paise, payment_mode, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
-        data.invoiceNumber,
+        invoiceNumber,
         data.customerId,
         data.userId,
         data.subtotalPaise,

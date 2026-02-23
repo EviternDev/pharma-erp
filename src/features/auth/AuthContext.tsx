@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch {
-        // DB might not be ready yet in tests; silently ignore
+        void 0; // DB might not be ready yet in tests; silently ignore
       } finally {
         setIsLoading(false);
       }
