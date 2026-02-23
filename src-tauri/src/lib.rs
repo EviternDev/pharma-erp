@@ -131,7 +131,6 @@ pub fn run() {
                     sgst_rate REAL NOT NULL DEFAULT 0,
                     sgst_amount_paise INTEGER NOT NULL DEFAULT 0,
                     total_paise INTEGER NOT NULL,
-                    hsn_code TEXT NOT NULL DEFAULT '3004',
                     FOREIGN KEY (sale_id) REFERENCES sales(id),
                     FOREIGN KEY (batch_id) REFERENCES batches(id),
                     FOREIGN KEY (medicine_id) REFERENCES medicines(id)
