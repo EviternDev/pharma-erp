@@ -33,6 +33,7 @@ interface SaleItemRow {
   sgst_rate: number;
   sgst_amount_paise: number;
   total_paise: number;
+  hsn_code: string;
 }
 
 function mapSaleRow(row: SaleRow): Sale {
@@ -71,19 +72,20 @@ export async function getSaleById(id: number): Promise<SaleWithDetails | null> {
 
   const saleRow = saleRows[0];
 
-  const itemRows = await db.select<(SaleItemRow & { medicine_name: string; batch_number: string })[]>(
-    `SELECT si.*, m.name as medicine_name, b.batch_number
+  const itemRows = await db.select<(SaleItemRow & { medicine_name: string; batch_number: string; expiry_date: string })[]>(
+    `SELECT si.*, m.name as medicine_name, b.batch_number, b.expiry_date
      FROM sale_items si
      JOIN medicines m ON si.medicine_id = m.id
      JOIN batches b ON si.batch_id = b.id
      WHERE si.sale_id = $1`,
     [id]
   );
-
   const items: SaleItemWithDetails[] = itemRows.map((row) => ({
     ...mapSaleItemRow(row),
     medicineName: row.medicine_name,
     batchNumber: row.batch_number,
+    hsnCode: row.hsn_code,
+    expiryDate: row.expiry_date,
   }));
 
   return {
@@ -163,6 +165,7 @@ export interface CreateSaleItemData {
   sgstRate: number;
   sgstAmountPaise: number;
   totalPaise: number;
+  hsnCode: string;
 }
 
 /**
@@ -171,57 +174,62 @@ export interface CreateSaleItemData {
  */
 export async function createSale(data: CreateSaleData): Promise<number> {
   const db = await getDb();
-
-  // Insert sale record
-  const saleResult = await db.execute(
-    `INSERT INTO sales (invoice_number, customer_id, user_id, subtotal_paise, discount_paise, total_cgst_paise, total_sgst_paise, total_gst_paise, grand_total_paise, payment_mode, notes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-    [
-      data.invoiceNumber,
-      data.customerId,
-      data.userId,
-      data.subtotalPaise,
-      data.discountPaise,
-      data.totalCgstPaise,
-      data.totalSgstPaise,
-      data.totalGstPaise,
-      data.grandTotalPaise,
-      data.paymentMode,
-      data.notes ?? null,
-    ]
-  );
-
-  const saleId = saleResult.lastInsertId ?? 0;
-
-  // Insert sale items and deduct batch quantities
-  for (const item of data.items) {
-    await db.execute(
-      `INSERT INTO sale_items (sale_id, batch_id, medicine_id, quantity, unit_price_paise, discount_paise, taxable_amount_paise, cgst_rate, cgst_amount_paise, sgst_rate, sgst_amount_paise, total_paise)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+  await db.execute('BEGIN IMMEDIATE');
+  try {
+    // Insert sale record
+    const saleResult = await db.execute(
+      `INSERT INTO sales (invoice_number, customer_id, user_id, subtotal_paise, discount_paise, total_cgst_paise, total_sgst_paise, total_gst_paise, grand_total_paise, payment_mode, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
-        saleId,
-        item.batchId,
-        item.medicineId,
-        item.quantity,
-        item.unitPricePaise,
-        item.discountPaise,
-        item.taxableAmountPaise,
-        item.cgstRate,
-        item.cgstAmountPaise,
-        item.sgstRate,
-        item.sgstAmountPaise,
-        item.totalPaise,
+        data.invoiceNumber,
+        data.customerId,
+        data.userId,
+        data.subtotalPaise,
+        data.discountPaise,
+        data.totalCgstPaise,
+        data.totalSgstPaise,
+        data.totalGstPaise,
+        data.grandTotalPaise,
+        data.paymentMode,
+        data.notes ?? null,
       ]
     );
 
+    const saleId = saleResult.lastInsertId ?? 0;
+  // Insert sale items and deduct batch quantities
+    for (const item of data.items) {
+      await db.execute(
+        `INSERT INTO sale_items (sale_id, batch_id, medicine_id, quantity, unit_price_paise, discount_paise, taxable_amount_paise, cgst_rate, cgst_amount_paise, sgst_rate, sgst_amount_paise, total_paise, hsn_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          saleId,
+          item.batchId,
+          item.medicineId,
+          item.quantity,
+          item.unitPricePaise,
+          item.discountPaise,
+          item.taxableAmountPaise,
+          item.cgstRate,
+          item.cgstAmountPaise,
+          item.sgstRate,
+          item.sgstAmountPaise,
+          item.totalPaise,
+          item.hsnCode,
+        ]
+      );
     // Deduct quantity from batch
-    await db.execute(
-      'UPDATE batches SET quantity = quantity - $1 WHERE id = $2',
-      [item.quantity, item.batchId]
-    );
-  }
+      await db.execute(
+        'UPDATE batches SET quantity = quantity - $1 WHERE id = $2',
+        [item.quantity, item.batchId]
+      );
+    }
 
-  return saleId;
+    await db.execute('COMMIT');
+    return saleId;
+  } catch (err) {
+    await db.execute('ROLLBACK');
+    throw err;
+  }
 }
 
 export async function getSalesByDateRange(

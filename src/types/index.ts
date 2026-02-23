@@ -212,4 +212,6 @@ export interface SaleWithDetails extends Sale {
 export interface SaleItemWithDetails extends SaleItem {
   medicineName: string;
   batchNumber: string;
+  hsnCode: string;
+  expiryDate: string;
 }
