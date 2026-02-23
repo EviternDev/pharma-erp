@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { copyFile } from "@tauri-apps/plugin-fs";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,11 +102,8 @@ export default function BackupRestore() {
       const dbPath = await join(dataDir, DB_FILENAME);
 
       await copyFile(selectedPath, dbPath);
-
-      toast.success(
-        "Backup restored successfully. Please restart the application to complete the restore.",
-        { duration: 10000 },
-      );
+      toast.success("Backup restored successfully. Restarting application...");
+      await relaunch();
     } catch (err) {
       console.error("Restore failed:", err);
       toast.error("Failed to restore backup. Please try again.");

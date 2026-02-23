@@ -131,6 +131,7 @@ pub fn run() {
                     sgst_rate REAL NOT NULL DEFAULT 0,
                     sgst_amount_paise INTEGER NOT NULL DEFAULT 0,
                     total_paise INTEGER NOT NULL,
+                    hsn_code TEXT NOT NULL DEFAULT '3004',
                     FOREIGN KEY (sale_id) REFERENCES sales(id),
                     FOREIGN KEY (batch_id) REFERENCES batches(id),
                     FOREIGN KEY (medicine_id) REFERENCES medicines(id)
@@ -196,6 +197,14 @@ pub fn run() {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 3,
+            description: "add hsn_code to sale_items",
+            sql: r#"
+                ALTER TABLE sale_items ADD COLUMN hsn_code TEXT NOT NULL DEFAULT '3004';
+            "#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -207,6 +216,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
