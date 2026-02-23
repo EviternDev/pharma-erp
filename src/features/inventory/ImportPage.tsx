@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { open } from "@tauri-apps/plugin-dialog";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import {
   UploadIcon,
   DownloadIcon,
@@ -150,52 +152,45 @@ export default function ImportPage() {
     };
   }
 
-  const handleFileUpload = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
+  const handleFileUpload = useCallback(async () => {
       setImportResult(null);
+    try {
+      const selectedPath = await open({
+        title: "Choose CSV File",
+        filters: [{ name: "CSV Files", extensions: ["csv"] }],
+        multiple: false,
+      });
 
-      try {
+      if (!selectedPath) return; // user cancelled
         // Load GST slabs for validation
-        const slabs = await getGstSlabs();
-        setGstSlabs(slabs);
+      const slabs = await getGstSlabs();
+      setGstSlabs(slabs);
         const validRates = slabs.map((s) => s.rate);
-
-        const text = await file.text();
-        const result = Papa.parse<Record<string, string>>(text, {
-          header: true,
-          skipEmptyLines: true,
-        });
-
+      const text = await readTextFile(selectedPath);
+      const result = Papa.parse<Record<string, string>>(text, {
+        header: true,
+        skipEmptyLines: true,
+      });
         if (result.errors.length > 0) {
-          toast.error(
-            `CSV parse errors: ${result.errors.map((err) => err.message).join(", ")}`
-          );
-        }
-
-        const validated = result.data.map((row, idx) =>
-          validateRow(row, idx + 2, validRates)
+        toast.error(
+          `CSV parse errors: ${result.errors.map((err) => err.message).join(", ")}`
         );
-
-        setParsedRows(validated);
-
-        const validCount = validated.filter((r) => r.isValid).length;
-        const invalidCount = validated.length - validCount;
-        toast.info(
-          `Parsed ${validated.length} rows: ${validCount} valid, ${invalidCount} with errors`
-        );
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to parse CSV file");
       }
+        const validated = result.data.map((row, idx) =>
+        validateRow(row, idx + 2, validRates)
+      );
 
-      // Reset file input so the same file can be re-uploaded
-      e.target.value = "";
-    },
-    []
-  );
+      setParsedRows(validated);
+        const validCount = validated.filter((r) => r.isValid).length;
+      const invalidCount = validated.length - validCount;
+      toast.info(
+        `Parsed ${validated.length} rows: ${validCount} valid, ${invalidCount} with errors`
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to parse CSV file");
+    }
+  }, []);
 
   async function handleImport() {
     const validRows = parsedRows.filter((r) => r.isValid);
@@ -271,24 +266,14 @@ export default function ImportPage() {
           Download Template
         </Button>
 
-        <label>
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          <Button
-            variant="default"
-            className="gap-2 cursor-pointer"
-            asChild
-          >
-            <span>
-              <UploadIcon className="size-4" />
-              Choose CSV File
-            </span>
-          </Button>
-        </label>
+        <Button
+          variant="default"
+          className="gap-2"
+          onClick={handleFileUpload}
+        >
+          <UploadIcon className="size-4" />
+          Choose CSV File
+        </Button>
       </div>
 
       {/* Import result summary */}
