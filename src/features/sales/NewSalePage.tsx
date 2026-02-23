@@ -23,6 +23,7 @@ import { createPrescription } from "@/db/queries/prescriptions";
 import {
   calculateLineItem,
   calculateInvoiceTotal,
+  validateNotAboveMrp,
   type SaleItemCalculation,
 } from "@/lib/gst";
 import {
@@ -235,13 +236,19 @@ export default function NewSalePage() {
         }
 
         const batch = batches[0];
+
+        if (!validateNotAboveMrp(batch.sellingPricePaise, batch.mrpPaise)) {
+          toast.error(
+            `${medicine.name}: Selling price exceeds MRP. Update batch before selling.`
+          );
+          return;
+        }
         const calc = calculateLineItem(
           batch.sellingPricePaise,
           1,
           medicine.gstRate,
           0
         );
-
         const newItem: CartItem = {
           medicineId: medicine.id,
           medicineName: medicine.name,
@@ -262,6 +269,7 @@ export default function NewSalePage() {
         setCart((prev) => [...prev, newItem]);
         setSearchTerm("");
         setShowResults(false);
+
       } catch (err) {
         console.error(err);
         toast.error("Failed to add item");
@@ -297,7 +305,9 @@ export default function NewSalePage() {
       setCart((prev) => {
         const updated = [...prev];
         const item = { ...updated[index] };
-        item.discountPaise = rupeesToPaise(discountRupees);
+        // Clamp discount: must be >= 0 and cannot make effective price negative
+        const rawDiscount = rupeesToPaise(discountRupees);
+        item.discountPaise = Math.max(0, Math.min(rawDiscount, item.unitPricePaise * item.quantity));
         item.calculation = calculateLineItem(
           item.unitPricePaise,
           item.quantity,
@@ -328,6 +338,18 @@ export default function NewSalePage() {
       return;
     }
 
+    // Final MRP guard before committing to DB
+    const mrpViolation = cart.find(
+      (item) => !validateNotAboveMrp(item.unitPricePaise, item.mrpPaise)
+    );
+    if (mrpViolation) {
+      toast.error(
+        `Cannot complete sale: ${mrpViolation.medicineName} price exceeds MRP`
+      );
+      setConfirmOpen(false);
+      return;
+    }
+
     setProcessing(true);
     try {
       const invoiceNumber = await getNextInvoiceNumber();
@@ -344,6 +366,7 @@ export default function NewSalePage() {
         sgstRate: item.calculation.sgstRate,
         sgstAmountPaise: item.calculation.sgstAmountPaise,
         totalPaise: item.calculation.totalPaise,
+        hsnCode: item.hsnCode,
       }));
 
       const saleData: CreateSaleData = {
